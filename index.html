@@ -1,25 +1,300 @@
-<div id="gas-data">読み込み中...</div>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>空野青空生誕2026 WOTAKU PROFILE BOOK</title>
+  <style>
+    * { box-sizing: border-box; }
+    html { margin: 0; padding: 0; background: #ffffff; }
+    body {
+      margin: 0; padding: 0; color: #222222; background: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    }
+    button, input { font: inherit; }
+    .site { width: min(1180px, 100%); margin: 0 auto; padding: 0 24px 80px; }
+    .hero { padding: 70px 0 50px; text-align: center; }
+    .eyebrow { margin: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.18em; color: #999999; }
+    .hero h1 { margin: 0; font-size: clamp(28px, 5vw, 52px); letter-spacing: 0.04em; }
+    .hero-text { margin: 18px 0 0; color: #777777; font-size: 14px; }
+    .section-title { margin: 20px 0 28px; }
+    .section-title h2 { margin: 0; font-size: 28px; letter-spacing: 0.08em; }
+    .search-area { margin: 0 0 30px; }
+    .search-area input {
+      width: 100%; max-width: 420px; height: 48px; padding: 0 18px;
+      border: 1px solid #dddddd; border-radius: 24px; outline: none; background: #ffffff;
+    }
+    .search-area input:focus { border-color: #999999; }
+    .profile-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 26px 20px; }
+    .profile-card { display: block; overflow: hidden; color: inherit; text-decoration: none; background: #ffffff; cursor: pointer; }
+    .profile-image-wrap { width: 100%; aspect-ratio: 1 / 1; overflow: hidden; background: #f3f3f3; }
+    .profile-image { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 0.35s ease; }
+    .profile-card:hover .profile-image { transform: scale(1.04); }
+    .profile-info { padding: 14px 2px 8px; }
+    .profile-name { margin: 0; font-size: 18px; font-weight: 700; }
+    .profile-message { margin: 7px 0 0; color: #777777; font-size: 13px; line-height: 1.6; }
+    .loading, .empty, .error { grid-column: 1 / -1; padding: 60px 20px; text-align: center; color: #888888; }
+    .back-button { margin: 30px 0 28px; padding: 10px 0; border: 0; background: transparent; color: #555555; cursor: pointer; font-size: 13px; letter-spacing: 0.08em; }
+    .detail-page { max-width: 820px; margin: 0 auto; }
+    .detail-hero { text-align: center; padding: 10px 0 50px; }
+    .detail-profile-image { width: min(280px, 70vw); aspect-ratio: 1 / 1; object-fit: cover; border-radius: 50%; display: block; margin: 0 auto 28px; background: #f3f3f3; }
+    .detail-name { margin: 0; font-size: clamp(28px, 6vw, 44px); }
+    .detail-section { padding: 30px 0; border-top: 1px solid #eeeeee; }
+    .detail-section h3 { margin: 0 0 14px; font-size: 13px; letter-spacing: 0.1em; color: #999999; }
+    .detail-text { margin: 0; white-space: pre-wrap; line-height: 1.9; font-size: 15px; }
+    .info-table { width: 100%; border-collapse: collapse; }
+    .info-table tr { border-bottom: 1px solid #eeeeee; }
+    .info-table th, .info-table td { padding: 15px 0; text-align: left; vertical-align: top; }
+    .info-table th { width: 35%; color: #888888; font-size: 13px; font-weight: 600; }
+    .info-table td { font-size: 15px; }
+    .x-link { color: inherit; }
+    .detail-image { display: block; width: 100%; height: auto; margin: 18px 0 0; border-radius: 8px; background: #f3f3f3; }
+    .image-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .image-grid .detail-image { margin: 0; }
+    @media (max-width: 900px) { .profile-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 640px) {
+      .site { padding-left: 16px; padding-right: 16px; }
+      .hero { padding-top: 42px; padding-bottom: 32px; }
+      .profile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 12px; }
+      .profile-name { font-size: 15px; }
+      .profile-message { font-size: 12px; }
+      .detail-profile-image { width: min(220px, 65vw); }
+      .image-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
 
-<script>
-  // ここを最新のデプロイURL（/exec）に置き換えてください
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbya94n7ABGUf2ddHFFkLSi4ZKUjR5eZz2ZWa6NnCLK7b2fBl7RhfkVud6BIMgK9LlwyAA/exec';
+  <main class="site">
+    <header class="hero">
+      <p class="eyebrow">PROFILE BOOK</p>
+      <h1>空野青空生誕2026<br>WOTAKU PROFILE BOOK</h1>
+      <p class="hero-text">あおにゃんを応援するみんなのプロフィール</p>
+    </header>
 
-  fetch(GAS_URL)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('HTTPエラー: ' + response.status);
-      }
-      return response.json();
-    })
-    .then(data => {
-      document.getElementById('gas-data').innerHTML = `
-        <h2>${data.title}</h2>
-        <p>${data.content}</p>
-      `;
-    })
-    .catch(error => {
-      // コンソールに詳しいエラー内容を出力
-      console.error('取得失敗の理由:', error);
-      document.getElementById('gas-data').innerText = 'データの取得に失敗しました。';
+    <section id="listPage">
+      <div class="section-title">
+        <p class="eyebrow">MEMBERS</p>
+        <h2>PROFILE</h2>
+      </div>
+
+      <div class="search-area">
+        <input id="searchInput" type="search" placeholder="名前で検索" autocomplete="off">
+      </div>
+
+      <div id="profileGrid" class="profile-grid">
+        <div class="loading">読み込み中...</div>
+      </div>
+    </section>
+
+    <section id="detailPage" class="detail-page" hidden>
+      <button id="backButton" class="back-button" type="button">← PROFILE LIST</button>
+      <div id="detailContent"></div>
+    </section>
+  </main>
+
+  <script>
+    // デプロイしたGASのWebアプリURL（/exec）を指定
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbya94n7ABGUf2ddHFFkLSi4ZKUjR5eZz2ZWa6NnCLK7b2fBl7RhfkVud6BIMgK9LlwyAA/exec';
+
+    let allProfiles = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('searchInput').addEventListener('input', filterProfiles);
+      document.getElementById('backButton').addEventListener('click', showList);
+      loadPage();
     });
-</script>
+
+    function loadPage() {
+      showList();
+    }
+
+    function showList() {
+      document.getElementById('listPage').hidden = false;
+      document.getElementById('detailPage').hidden = true;
+
+      if (allProfiles.length > 0) {
+        renderProfiles(allProfiles);
+        return;
+      }
+
+      // キャッシュを回避するためタイムスタンプをURLに付与して最新データを強制取得
+      const fetchUrl = GAS_URL + (GAS_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
+
+      fetch(fetchUrl)
+        .then(function(response) {
+          if (!response.ok) {
+            throw new Error('データの取得に失敗しました (HTTP ' + response.status + ')');
+          }
+          return response.json();
+        })
+        .then(function(profiles) {
+          allProfiles = Array.isArray(profiles) ? profiles : [];
+          renderProfiles(allProfiles);
+        })
+        .catch(function(error) {
+          document.getElementById('profileGrid').innerHTML =
+            '<div class="error">' + escapeHtml(error.message) + '</div>';
+        });
+    }
+
+    function renderProfiles(profiles) {
+      const grid = document.getElementById('profileGrid');
+
+      if (!profiles.length) {
+        grid.innerHTML = '<div class="empty">公開プロフィールはありません。</div>';
+        return;
+      }
+
+      grid.innerHTML = profiles.map(createCard).join('');
+    }
+
+    function createCard(profile) {
+      const name = safeStr(profile.name);
+      const img = safeStr(profile.profileImage);
+      const msg = safeStr(profile.birthdayMessage);
+      const id = safeStr(profile.id);
+
+      return `
+        <div class="profile-card" onclick="selectProfile('${escapeAttribute(id)}')">
+          <div class="profile-image-wrap">
+            <img class="profile-image" src="${escapeAttribute(img)}" alt="${escapeHtml(name)}" loading="lazy">
+          </div>
+          <div class="profile-info">
+            <h3 class="profile-name">${escapeHtml(name || '名無し')}</h3>
+            ${msg ? `<p class="profile-message">${escapeHtml(msg)}</p>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function filterProfiles(event) {
+      const keyword = event.target.value.trim().toLowerCase();
+
+      if (!keyword) {
+        renderProfiles(allProfiles);
+        return;
+      }
+
+      const filtered = allProfiles.filter(function(profile) {
+        return safeStr(profile.name).toLowerCase().includes(keyword);
+      });
+
+      renderProfiles(filtered);
+    }
+
+    function selectProfile(profileId) {
+      const profile = allProfiles.find(function(p) {
+        return safeStr(p.id) === profileId;
+      });
+
+      if (!profile) {
+        alert('プロフィールが見つかりませんでした。');
+        return;
+      }
+
+      document.getElementById('listPage').hidden = true;
+      document.getElementById('detailPage').hidden = false;
+
+      renderDetail(profile);
+      window.scrollTo(0, 0);
+    }
+
+    function renderDetail(profile) {
+      const name = safeStr(profile.name);
+      const img = safeStr(profile.profileImage);
+      const xInfo = formatXAccount(profile.x);
+      const xHtml = xInfo
+        ? `<a class="x-link" href="${escapeAttribute(xInfo.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(xInfo.display)}</a>`
+        : '未設定';
+
+      const favSong = safeStr(profile.favoriteSong);
+      const favPoint = safeStr(profile.favoritePoint);
+      const msg = safeStr(profile.birthdayMessage);
+      const meseca = safeStr(profile.meseca);
+      const aonyacchi = safeStr(profile.aonyacchi);
+
+      document.getElementById('detailContent').innerHTML = `
+        <div class="detail-hero">
+          <img class="detail-profile-image" src="${escapeAttribute(img)}" alt="${escapeHtml(name)}">
+          <h1 class="detail-name">${escapeHtml(name)}</h1>
+        </div>
+
+        <section class="detail-section">
+          <table class="info-table">
+            <tr><th>Xアカウント</th><td>${xHtml}</td></tr>
+            <tr><th>プロフィール番号</th><td>${escapeHtml(safeStr(profile.profileNumber))}</td></tr>
+            <tr><th>出身地・国</th><td>${escapeHtml(safeStr(profile.birthplace))}</td></tr>
+            <tr><th>誕生日</th><td>${escapeHtml(safeStr(profile.birthday))}</td></tr>
+          </table>
+        </section>
+
+        ${favSong ? `<section class="detail-section"><h3>FAVORITE SONG</h3><p class="detail-text">${escapeHtml(favSong)}</p></section>` : ''}
+        ${favPoint ? `<section class="detail-section"><h3>WHAT I LOVE</h3><p class="detail-text">${escapeHtml(favPoint)}</p></section>` : ''}
+        ${msg ? `<section class="detail-section"><h3>MESSAGE</h3><p class="detail-text">${escapeHtml(msg)}</p></section>` : ''}
+        ${meseca ? `<section class="detail-section"><h3>MESSAGE CARD</h3><img class="detail-image" src="${escapeAttribute(meseca)}" alt="メセカ画像"></section>` : ''}
+        ${aonyacchi ? `<section class="detail-section"><h3>AONYACCHI</h3><img class="detail-image" src="${escapeAttribute(aonyacchi)}" alt="あおにゃっち画像"></section>` : ''}
+        ${createOtherImages(profile)}
+      `;
+    }
+
+    function createOtherImages(profile) {
+      const images = [safeStr(profile.other1), safeStr(profile.other2), safeStr(profile.other3)].filter(Boolean);
+      if (!images.length) return '';
+
+      return `
+        <section class="detail-section">
+          <h3>OTHER PHOTOS</h3>
+          <div class="image-grid">
+            ${images.map(function(image, index) {
+              return `<img class="detail-image" src="${escapeAttribute(image)}" alt="その他画像${index + 1}">`;
+            }).join('')}
+          </div>
+        </section>
+      `;
+    }
+
+    function safeStr(val) {
+      if (val === undefined || val === null || val === 'undefined' || val === 'null') {
+        return '';
+      }
+      return String(val).trim();
+    }
+
+    function escapeHtml(value) {
+      const str = safeStr(value);
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttribute(value) {
+      return escapeHtml(value);
+    }
+
+    function formatXAccount(xValue) {
+      const raw = safeStr(xValue);
+      if (!raw) return null;
+
+      let url = raw;
+      let display = raw;
+
+      if (!/^https?:\/\//i.test(raw)) {
+        const handle = raw.replace(/^@/, '');
+        url = 'https://x.com/' + handle;
+        display = '@' + handle;
+      } else {
+        const match = raw.match(/(?:x|twitter)\.com\/([a-zA-Z0-9_]+)/i);
+        if (match && match[1]) {
+          display = '@' + match[1];
+        }
+      }
+
+      return { url: url, display: display };
+    }
+  </script>
+</body>
+</html>

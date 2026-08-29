@@ -49,7 +49,6 @@
       background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;
       z-index: 1000;
     }
-    /* hidden属性適用時に確実に非表示にする */
     .modal-overlay[hidden] {
       display: none !important;
     }
@@ -138,8 +137,8 @@
   <main class="site">
     <div class="admin-bar">
       <span id="adminBadge" class="admin-badge" hidden></span>
-      <button id="settingsBtn" class="admin-btn" type="button" hidden></button>
       <button id="adminBtn" class="admin-btn" type="button"></button>
+      <button id="settingsBtn" class="admin-btn" type="button" hidden></button>
     </div>
 
     <header class="hero">
@@ -207,25 +206,20 @@
      * ⚙️ 設定項目（文言・URL・メッセージの一括変更）
      * ========================================================= */
     const CONFIG = {
-      // GASのウェブアプリURL
       GAS_URL: 'https://script.google.com/macros/s/AKfycbya94n7ABGUf2ddHFFkLSi4ZKUjR5eZz2ZWa6NnCLK7b2fBl7RhfkVud6BIMgK9LlwyAA/exec',
 
-      // 画面上の表示文言
       LABELS: {
         siteTitle: '空野青空生誕2026 WOTAKU PROFILE BOOK',
         siteSubtitle: 'あおにゃんを応援するみんなのプロフィール',
         
-        // 管理者関連ボタン・バッジ
         adminBtnInactive: '🔒 蒼い彗星専用コンソール',
         adminBtnActive: 'ミノフスキー粒子・散布（一般公開モード）',
         adminBadge: '✨ ミノフスキー粒子・解除中（全件表示中）',
         settingsBtn: '⚙️ 公開設定',
         
-        // 画面表示
         searchPlaceholder: '名前で検索',
         backToList: '← PROFILE LIST',
         
-        // 設定モーダル
         modalHeader: '⚙️ 一般公開設定',
         modalToggleLabel: '一般公開の有効化',
         modalStatusOn: 'ON（期間指定で公開）',
@@ -235,7 +229,6 @@
         modalSaveBtn: '保存する',
         modalCancelBtn: 'キャンセル',
 
-        // 詳細画面の項目名
         xAccount: 'Xアカウント',
         profileNumber: 'プロフィール番号',
         birthplace: '出身地・国',
@@ -250,7 +243,6 @@
         anonymous: '名無し'
       },
 
-      // メッセージ・通知文言
       MESSAGES: {
         loading: '読み込み中...',
         outOfPeriod: '現在は公開期間外です。',
@@ -273,7 +265,7 @@
     let currentSettings = { enabled: false, start: '', end: '' };
 
     document.addEventListener('DOMContentLoaded', function() {
-      initUI(); // CONFIGからテキストを画面に注入
+      initUI();
       
       document.getElementById('searchInput').addEventListener('input', filterProfiles);
       document.getElementById('backButton').addEventListener('click', showList);
@@ -284,7 +276,6 @@
       loadPage();
     });
 
-    // CONFIGの設定値を初期DOMに挿入する関数
     function initUI() {
       document.getElementById('htmlTitle').textContent = CONFIG.LABELS.siteTitle;
       document.getElementById('heroTitle').innerHTML = CONFIG.LABELS.siteTitle.replace('WOTAKU', '<br>WOTAKU');
@@ -344,7 +335,6 @@
       fetchDataAndRender();
     }
 
-    /* モーダル関連処理 */
     function openSettingsModal() {
       document.getElementById('publicToggle').checked = currentSettings.enabled;
       document.getElementById('startDateInput').value = currentSettings.start || '';
@@ -363,7 +353,6 @@
       document.getElementById('dateArea').style.display = isChecked ? 'block' : 'none';
     }
 
-    /* 設定保存処理 */
     function saveSettings() {
       const pass = sessionStorage.getItem('admin_pass') || '';
       const enabled = document.getElementById('publicToggle').checked;

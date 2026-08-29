@@ -49,6 +49,10 @@
       background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;
       z-index: 1000;
     }
+    /* hidden属性適用時に確実に非表示にする */
+    .modal-overlay[hidden] {
+      display: none !important;
+    }
     .modal-card {
       background: #ffffff; width: min(440px, 90vw); padding: 28px; border-radius: 16px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.15);
@@ -359,7 +363,7 @@
       document.getElementById('dateArea').style.display = isChecked ? 'block' : 'none';
     }
 
-    /* 設定保存処理 (POST 送信対応版) */
+    /* 設定保存処理 */
     function saveSettings() {
       const pass = sessionStorage.getItem('admin_pass') || '';
       const enabled = document.getElementById('publicToggle').checked;
@@ -374,7 +378,6 @@
         end: end
       };
 
-      // GASのCORS制約を回避するため、POST送信時に標準JSON文字列として出力
       fetch(CONFIG.GAS_URL, {
         method: 'POST',
         body: JSON.stringify(payload)

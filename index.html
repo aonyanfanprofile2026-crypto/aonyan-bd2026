@@ -359,27 +359,41 @@
       document.getElementById('dateArea').style.display = isChecked ? 'block' : 'none';
     }
 
+    /* 設定保存処理 (POST 送信対応版) */
     function saveSettings() {
       const pass = sessionStorage.getItem('admin_pass') || '';
       const enabled = document.getElementById('publicToggle').checked;
       const start = document.getElementById('startDateInput').value;
       const end = document.getElementById('endDateInput').value;
 
-      const saveUrl = CONFIG.GAS_URL + '?action=saveSettings&pass=' + encodeURIComponent(pass)
-        + '&enabled=' + enabled + '&start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end);
+      const payload = {
+        action: 'saveSettings',
+        pass: pass,
+        enabled: enabled,
+        start: start,
+        end: end
+      };
 
-      fetch(saveUrl)
+      // GASのCORS制約を回避するため、POST送信時に標準JSON文字列として出力
+      fetch(CONFIG.GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      })
         .then(res => res.json())
         .then(data => {
-          if (data.success) {
+          if (data && data.success) {
             alert(CONFIG.MESSAGES.saveSuccessAlert);
             closeSettingsModal();
             fetchDataAndRender();
           } else {
+            console.error('Save failed response:', data);
             alert(CONFIG.MESSAGES.saveFailedAlert);
           }
         })
-        .catch(() => alert(CONFIG.MESSAGES.networkErrorAlert));
+        .catch(err => {
+          console.error('Network or Parse Error:', err);
+          alert(CONFIG.MESSAGES.networkErrorAlert);
+        });
     }
 
     function showList() {

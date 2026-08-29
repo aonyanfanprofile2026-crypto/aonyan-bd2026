@@ -12,8 +12,38 @@
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
     }
     button, input { font: inherit; }
-    .site { width: min(1180px, 100%); margin: 0 auto; padding: 0 24px 80px; }
-    .hero { padding: 70px 0 50px; text-align: center; }
+    .site { width: min(1180px, 100%); margin: 0 auto; padding: 0 24px 80px; position: relative; }
+    
+    .admin-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 16px 0 0;
+      gap: 12px;
+    }
+    .admin-btn {
+      background: #f4f4f4;
+      border: 1px solid #cccccc;
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #555555;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .admin-btn:hover { background: #e8e8e8; color: #111111; }
+    .admin-badge {
+      font-size: 12px;
+      font-weight: 700;
+      color: #2e7d32;
+      background: #e8f5e9;
+      padding: 5px 12px;
+      border-radius: 16px;
+      border: 1px solid #c8e6c9;
+    }
+
+    .hero { padding: 30px 0 40px; text-align: center; }
     .eyebrow { margin: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.18em; color: #999999; }
     .hero h1 { margin: 0; font-size: clamp(28px, 5vw, 52px); letter-spacing: 0.04em; }
     .hero-text { margin: 18px 0 0; color: #777777; font-size: 14px; }
@@ -54,7 +84,7 @@
     @media (max-width: 900px) { .profile-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
     @media (max-width: 640px) {
       .site { padding-left: 16px; padding-right: 16px; }
-      .hero { padding-top: 42px; padding-bottom: 32px; }
+      .hero { padding-top: 20px; padding-bottom: 28px; }
       .profile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 12px; }
       .profile-name { font-size: 15px; }
       .profile-message { font-size: 12px; }
@@ -66,6 +96,11 @@
 <body>
 
   <main class="site">
+    <div class="admin-bar">
+      <span id="adminBadge" class="admin-badge" hidden>🔓 全件表示モード中</span>
+      <button id="adminBtn" class="admin-btn" type="button">🔒 管理者表示</button>
+    </div>
+
     <header class="hero">
       <p class="eyebrow">PROFILE BOOK</p>
       <h1>空野青空生誕2026<br>WOTAKU PROFILE BOOK</h1>
@@ -102,6 +137,9 @@
     document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('searchInput').addEventListener('input', filterProfiles);
       document.getElementById('backButton').addEventListener('click', showList);
+      document.getElementById('adminBtn').addEventListener('click', handleAdminToggle);
+      
+      updateAdminUI();
       loadPage();
     });
 
@@ -109,17 +147,61 @@
       showList();
     }
 
+    function updateAdminUI() {
+      const pass = sessionStorage.getItem('admin_pass');
+      if (pass) {
+        document.getElementById('adminBadge').hidden = false;
+        document.getElementById('adminBtn').textContent = '一般表示に戻る';
+      } else {
+        document.getElementById('adminBadge').hidden = true;
+        document.getElementById('adminBtn').textContent = '🔒 管理者表示';
+      }
+    }
+
+    function handleAdminToggle() {
+      const currentPass = sessionStorage.getItem('admin_pass');
+      
+      // ログイン済みの場合 -> 一般表示へ戻す
+      if (currentPass) {
+        sessionStorage.removeItem('admin_pass');
+        allProfiles = [];
+        updateAdminUI();
+        fetchDataAndRender();
+        return;
+      }
+
+      // 未ログインの場合 -> パスワード入力プロンプト
+      const inputPass = prompt('パスワードを入力してください（推しメン・管理者用）:');
+      if (inputPass === null) return;
+      if (!inputPass.trim()) {
+        alert('パスワードを入力してください。');
+        return;
+      }
+
+      sessionStorage.setItem('admin_pass', inputPass.trim());
+      allProfiles = [];
+      updateAdminUI();
+      fetchDataAndRender();
+    }
+
     function showList() {
       document.getElementById('listPage').hidden = false;
       document.getElementById('detailPage').hidden = true;
 
       if (allProfiles.length > 0) {
-        renderProfiles(allProfiles);
+        renderProfiles(allProfiles, true, true);
         return;
       }
 
-      // キャッシュを回避するためタイムスタンプをURLに付与して最新データを強制取得
-      const fetchUrl = GAS_URL + (GAS_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
+      fetchDataAndRender();
+    }
+
+    function fetchDataAndRender() {
+      const grid = document.getElementById('profileGrid');
+      grid.innerHTML = '<div class="loading">読み込み中...</div>';
+
+      const pass = sessionStorage.getItem('admin_pass') || '';
+      const fetchUrl = GAS_URL + '?pass=' + encodeURIComponent(pass) + '&t=' + Date.now();
 
       fetch(fetchUrl)
         .then(function(response) {
@@ -128,18 +210,35 @@
           }
           return response.json();
         })
-        .then(function(profiles) {
-          allProfiles = Array.isArray(profiles) ? profiles : [];
-          renderProfiles(allProfiles);
+        .then(function(data) {
+          if (Array.isArray(data)) {
+            allProfiles = data;
+            renderProfiles(allProfiles, true, false);
+          } else {
+            allProfiles = data.profiles || [];
+            
+            // パスワードが間違っていた場合はセッションから削除
+            if (pass && !data.isAuth) {
+              alert('パスワードが違います。');
+              sessionStorage.removeItem('admin_pass');
+              updateAdminUI();
+            }
+
+            renderProfiles(allProfiles, data.isPublicOpen, data.isAuth);
+          }
         })
         .catch(function(error) {
-          document.getElementById('profileGrid').innerHTML =
-            '<div class="error">' + escapeHtml(error.message) + '</div>';
+          grid.innerHTML = '<div class="error">' + escapeHtml(error.message) + '</div>';
         });
     }
 
-    function renderProfiles(profiles) {
+    function renderProfiles(profiles, isPublicOpen, isAuth) {
       const grid = document.getElementById('profileGrid');
+
+      if (!isAuth && isPublicOpen === false) {
+        grid.innerHTML = '<div class="empty">現在は公開期間外です。</div>';
+        return;
+      }
 
       if (!profiles.length) {
         grid.innerHTML = '<div class="empty">公開プロフィールはありません。</div>';
@@ -172,7 +271,7 @@
       const keyword = event.target.value.trim().toLowerCase();
 
       if (!keyword) {
-        renderProfiles(allProfiles);
+        renderProfiles(allProfiles, true, true);
         return;
       }
 
@@ -180,7 +279,7 @@
         return safeStr(profile.name).toLowerCase().includes(keyword);
       });
 
-      renderProfiles(filtered);
+      renderProfiles(filtered, true, true);
     }
 
     function selectProfile(profileId) {

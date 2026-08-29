@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>空野青空生誕2026 WOTAKU PROFILE BOOK</title>
+  <title id="htmlTitle">WOTAKU PROFILE BOOK</title>
   <style>
     * { box-sizing: border-box; }
     html { margin: 0; padding: 0; background: #ffffff; }
@@ -19,7 +19,7 @@
       justify-content: flex-end;
       align-items: center;
       padding: 16px 0 0;
-      gap: 12px;
+      gap: 10px;
     }
     .admin-btn {
       background: #f4f4f4;
@@ -42,6 +42,42 @@
       border-radius: 16px;
       border: 1px solid #c8e6c9;
     }
+
+    /* 設定モーダル UI */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+    .modal-card {
+      background: #ffffff; width: min(440px, 90vw); padding: 28px; border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+    .modal-header { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+    .setting-item { margin-bottom: 20px; }
+    .setting-label { font-size: 13px; font-weight: 600; color: #666; margin-bottom: 8px; display: block; }
+    
+    /* トグルスイッチ */
+    .switch-label { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+    .switch { position: relative; display: inline-block; width: 46px; height: 26px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc; transition: .3s; border-radius: 26px;
+    }
+    .slider:before {
+      position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
+      background-color: white; transition: .3s; border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #2e7d32; }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    .date-input {
+      width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;
+    }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+    .save-btn { background: #222; color: #fff; border: 0; padding: 8px 18px; border-radius: 8px; cursor: pointer; }
+    .cancel-btn { background: #eee; color: #333; border: 0; padding: 8px 18px; border-radius: 8px; cursor: pointer; }
 
     .hero { padding: 30px 0 40px; text-align: center; }
     .eyebrow { margin: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.18em; color: #999999; }
@@ -97,14 +133,15 @@
 
   <main class="site">
     <div class="admin-bar">
-      <span id="adminBadge" class="admin-badge" hidden>🔓 全件表示モード中</span>
-      <button id="adminBtn" class="admin-btn" type="button">🔒 管理者表示</button>
+      <span id="adminBadge" class="admin-badge" hidden></span>
+      <button id="settingsBtn" class="admin-btn" type="button" hidden></button>
+      <button id="adminBtn" class="admin-btn" type="button"></button>
     </div>
 
     <header class="hero">
       <p class="eyebrow">PROFILE BOOK</p>
-      <h1>空野青空生誕2026<br>WOTAKU PROFILE BOOK</h1>
-      <p class="hero-text">あおにゃんを応援するみんなのプロフィール</p>
+      <h1 id="heroTitle"></h1>
+      <p id="heroText" class="hero-text"></p>
     </header>
 
     <section id="listPage">
@@ -114,34 +151,153 @@
       </div>
 
       <div class="search-area">
-        <input id="searchInput" type="search" placeholder="名前で検索" autocomplete="off">
+        <input id="searchInput" type="search" placeholder="" autocomplete="off">
       </div>
 
-      <div id="profileGrid" class="profile-grid">
-        <div class="loading">読み込み中...</div>
-      </div>
+      <div id="profileGrid" class="profile-grid"></div>
     </section>
 
     <section id="detailPage" class="detail-page" hidden>
-      <button id="backButton" class="back-button" type="button">← PROFILE LIST</button>
+      <button id="backButton" class="back-button" type="button"></button>
       <div id="detailContent"></div>
     </section>
   </main>
 
-  <script>
-    // デプロイしたGASのWebアプリURL（/exec）を指定
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbya94n7ABGUf2ddHFFkLSi4ZKUjR5eZz2ZWa6NnCLK7b2fBl7RhfkVud6BIMgK9LlwyAA/exec';
+  <!-- 管理設定モーダル -->
+  <div id="settingsModal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div id="modalHeader" class="modal-header"></div>
+      
+      <div class="setting-item">
+        <span id="modalToggleLabel" class="setting-label"></span>
+        <label class="switch-label">
+          <span class="switch">
+            <input type="checkbox" id="publicToggle" onchange="toggleDateInputs()">
+            <span class="slider"></span>
+          </span>
+          <span id="toggleStatusText"></span>
+        </label>
+      </div>
 
+      <div id="dateArea" style="display:none;">
+        <div class="setting-item">
+          <label id="modalStartLabel" class="setting-label" for="startDateInput"></label>
+          <input type="datetime-local" id="startDateInput" class="date-input">
+        </div>
+
+        <div class="setting-item">
+          <label id="modalEndLabel" class="setting-label" for="endDateInput"></label>
+          <input type="datetime-local" id="endDateInput" class="date-input">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="modalCancelBtn" class="cancel-btn" type="button" onclick="closeSettingsModal()"></button>
+        <button id="modalSaveBtn" class="save-btn" type="button" onclick="saveSettings()"></button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================
+     * ⚙️ 設定項目（文言・URL・メッセージの一括変更）
+     * ========================================================= */
+    const CONFIG = {
+      // GASのウェブアプリURL
+      GAS_URL: 'https://script.google.com/macros/s/AKfycbya94n7ABGUf2ddHFFkLSi4ZKUjR5eZz2ZWa6NnCLK7b2fBl7RhfkVud6BIMgK9LlwyAA/exec',
+
+      // 画面上の表示文言
+      LABELS: {
+        siteTitle: '空野青空生誕2026 WOTAKU PROFILE BOOK',
+        siteSubtitle: 'あおにゃんを応援するみんなのプロフィール',
+        
+        // 管理者関連ボタン・バッジ
+        adminBtnInactive: '🔒 蒼い彗星専用コンソール',
+        adminBtnActive: 'ミノフスキー粒子・散布（一般公開モード）',
+        adminBadge: '✨ ミノフスキー粒子・解除中（全件表示中）',
+        settingsBtn: '⚙️ 公開設定',
+        
+        // 画面表示
+        searchPlaceholder: '名前で検索',
+        backToList: '← PROFILE LIST',
+        
+        // 設定モーダル
+        modalHeader: '⚙️ 一般公開設定',
+        modalToggleLabel: '一般公開の有効化',
+        modalStatusOn: 'ON（期間指定で公開）',
+        modalStatusOff: 'OFF（手動非公開中）',
+        modalStartLabel: '公開開始日時',
+        modalEndLabel: '公開終了日時',
+        modalSaveBtn: '保存する',
+        modalCancelBtn: 'キャンセル',
+
+        // 詳細画面の項目名
+        xAccount: 'Xアカウント',
+        profileNumber: 'プロフィール番号',
+        birthplace: '出身地・国',
+        birthday: '誕生日',
+        favoriteSong: 'FAVORITE SONG',
+        favoritePoint: 'WHAT I LOVE',
+        message: 'MESSAGE',
+        messageCard: 'MESSAGE CARD',
+        aonyacchi: 'AONYACCHI',
+        otherPhotos: 'OTHER PHOTOS',
+        unSet: '未設定',
+        anonymous: '名無し'
+      },
+
+      // メッセージ・通知文言
+      MESSAGES: {
+        loading: '読み込み中...',
+        outOfPeriod: '現在は公開期間外です。',
+        emptyProfiles: '公開プロフィールはありません。',
+        promptPassword: 'パスワードを入力してください（蒼い彗星専用）:',
+        emptyPasswordAlert: 'パスワードを入力してください。',
+        wrongPasswordAlert: 'パスワードが違います。',
+        notFoundProfileAlert: 'プロフィールが見つかりませんでした。',
+        saveSuccessAlert: '設定を保存しました。',
+        saveFailedAlert: '保存に失敗しました。',
+        networkErrorAlert: '通信エラーが発生しました。',
+        fetchErrorPrefix: 'データの取得に失敗しました (HTTP '
+      }
+    };
+
+    /* =========================================================
+     * メイン処理
+     * ========================================================= */
     let allProfiles = [];
+    let currentSettings = { enabled: false, start: '', end: '' };
 
     document.addEventListener('DOMContentLoaded', function() {
+      initUI(); // CONFIGからテキストを画面に注入
+      
       document.getElementById('searchInput').addEventListener('input', filterProfiles);
       document.getElementById('backButton').addEventListener('click', showList);
       document.getElementById('adminBtn').addEventListener('click', handleAdminToggle);
+      document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
       
       updateAdminUI();
       loadPage();
     });
+
+    // CONFIGの設定値を初期DOMに挿入する関数
+    function initUI() {
+      document.getElementById('htmlTitle').textContent = CONFIG.LABELS.siteTitle;
+      document.getElementById('heroTitle').innerHTML = CONFIG.LABELS.siteTitle.replace('WOTAKU', '<br>WOTAKU');
+      document.getElementById('heroText').textContent = CONFIG.LABELS.siteSubtitle;
+      
+      document.getElementById('adminBadge').textContent = CONFIG.LABELS.adminBadge;
+      document.getElementById('settingsBtn').textContent = CONFIG.LABELS.settingsBtn;
+      document.getElementById('searchInput').placeholder = CONFIG.LABELS.searchPlaceholder;
+      document.getElementById('backButton').textContent = CONFIG.LABELS.backToList;
+
+      document.getElementById('modalHeader').textContent = CONFIG.LABELS.modalHeader;
+      document.getElementById('modalToggleLabel').textContent = CONFIG.LABELS.modalToggleLabel;
+      document.getElementById('modalStartLabel').textContent = CONFIG.LABELS.modalStartLabel;
+      document.getElementById('modalEndLabel').textContent = CONFIG.LABELS.modalEndLabel;
+      document.getElementById('modalSaveBtn').textContent = CONFIG.LABELS.modalSaveBtn;
+      document.getElementById('modalCancelBtn').textContent = CONFIG.LABELS.modalCancelBtn;
+    }
 
     function loadPage() {
       showList();
@@ -151,17 +307,18 @@
       const pass = sessionStorage.getItem('admin_pass');
       if (pass) {
         document.getElementById('adminBadge').hidden = false;
-        document.getElementById('adminBtn').textContent = '一般表示に戻る';
+        document.getElementById('settingsBtn').hidden = false;
+        document.getElementById('adminBtn').textContent = CONFIG.LABELS.adminBtnActive;
       } else {
         document.getElementById('adminBadge').hidden = true;
-        document.getElementById('adminBtn').textContent = '🔒 管理者表示';
+        document.getElementById('settingsBtn').hidden = true;
+        document.getElementById('adminBtn').textContent = CONFIG.LABELS.adminBtnInactive;
       }
     }
 
     function handleAdminToggle() {
       const currentPass = sessionStorage.getItem('admin_pass');
       
-      // ログイン済みの場合 -> 一般表示へ戻す
       if (currentPass) {
         sessionStorage.removeItem('admin_pass');
         allProfiles = [];
@@ -170,11 +327,10 @@
         return;
       }
 
-      // 未ログインの場合 -> パスワード入力プロンプト
-      const inputPass = prompt('パスワードを入力してください（推しメン・管理者用）:');
+      const inputPass = prompt(CONFIG.MESSAGES.promptPassword);
       if (inputPass === null) return;
       if (!inputPass.trim()) {
-        alert('パスワードを入力してください。');
+        alert(CONFIG.MESSAGES.emptyPasswordAlert);
         return;
       }
 
@@ -182,6 +338,48 @@
       allProfiles = [];
       updateAdminUI();
       fetchDataAndRender();
+    }
+
+    /* モーダル関連処理 */
+    function openSettingsModal() {
+      document.getElementById('publicToggle').checked = currentSettings.enabled;
+      document.getElementById('startDateInput').value = currentSettings.start || '';
+      document.getElementById('endDateInput').value = currentSettings.end || '';
+      toggleDateInputs();
+      document.getElementById('settingsModal').hidden = false;
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').hidden = true;
+    }
+
+    function toggleDateInputs() {
+      const isChecked = document.getElementById('publicToggle').checked;
+      document.getElementById('toggleStatusText').textContent = isChecked ? CONFIG.LABELS.modalStatusOn : CONFIG.LABELS.modalStatusOff;
+      document.getElementById('dateArea').style.display = isChecked ? 'block' : 'none';
+    }
+
+    function saveSettings() {
+      const pass = sessionStorage.getItem('admin_pass') || '';
+      const enabled = document.getElementById('publicToggle').checked;
+      const start = document.getElementById('startDateInput').value;
+      const end = document.getElementById('endDateInput').value;
+
+      const saveUrl = CONFIG.GAS_URL + '?action=saveSettings&pass=' + encodeURIComponent(pass)
+        + '&enabled=' + enabled + '&start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end);
+
+      fetch(saveUrl)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            alert(CONFIG.MESSAGES.saveSuccessAlert);
+            closeSettingsModal();
+            fetchDataAndRender();
+          } else {
+            alert(CONFIG.MESSAGES.saveFailedAlert);
+          }
+        })
+        .catch(() => alert(CONFIG.MESSAGES.networkErrorAlert));
     }
 
     function showList() {
@@ -198,15 +396,15 @@
 
     function fetchDataAndRender() {
       const grid = document.getElementById('profileGrid');
-      grid.innerHTML = '<div class="loading">読み込み中...</div>';
+      grid.innerHTML = '<div class="loading">' + escapeHtml(CONFIG.MESSAGES.loading) + '</div>';
 
       const pass = sessionStorage.getItem('admin_pass') || '';
-      const fetchUrl = GAS_URL + '?pass=' + encodeURIComponent(pass) + '&t=' + Date.now();
+      const fetchUrl = CONFIG.GAS_URL + '?pass=' + encodeURIComponent(pass) + '&t=' + Date.now();
 
       fetch(fetchUrl)
         .then(function(response) {
           if (!response.ok) {
-            throw new Error('データの取得に失敗しました (HTTP ' + response.status + ')');
+            throw new Error(CONFIG.MESSAGES.fetchErrorPrefix + response.status + ')');
           }
           return response.json();
         })
@@ -216,10 +414,10 @@
             renderProfiles(allProfiles, true, false);
           } else {
             allProfiles = data.profiles || [];
+            currentSettings = data.settings || { enabled: false, start: '', end: '' };
             
-            // パスワードが間違っていた場合はセッションから削除
             if (pass && !data.isAuth) {
-              alert('パスワードが違います。');
+              alert(CONFIG.MESSAGES.wrongPasswordAlert);
               sessionStorage.removeItem('admin_pass');
               updateAdminUI();
             }
@@ -236,12 +434,12 @@
       const grid = document.getElementById('profileGrid');
 
       if (!isAuth && isPublicOpen === false) {
-        grid.innerHTML = '<div class="empty">現在は公開期間外です。</div>';
+        grid.innerHTML = '<div class="empty">' + escapeHtml(CONFIG.MESSAGES.outOfPeriod) + '</div>';
         return;
       }
 
       if (!profiles.length) {
-        grid.innerHTML = '<div class="empty">公開プロフィールはありません。</div>';
+        grid.innerHTML = '<div class="empty">' + escapeHtml(CONFIG.MESSAGES.emptyProfiles) + '</div>';
         return;
       }
 
@@ -260,7 +458,7 @@
             <img class="profile-image" src="${escapeAttribute(img)}" alt="${escapeHtml(name)}" loading="lazy">
           </div>
           <div class="profile-info">
-            <h3 class="profile-name">${escapeHtml(name || '名無し')}</h3>
+            <h3 class="profile-name">${escapeHtml(name || CONFIG.LABELS.anonymous)}</h3>
             ${msg ? `<p class="profile-message">${escapeHtml(msg)}</p>` : ''}
           </div>
         </div>
@@ -288,7 +486,7 @@
       });
 
       if (!profile) {
-        alert('プロフィールが見つかりませんでした。');
+        alert(CONFIG.MESSAGES.notFoundProfileAlert);
         return;
       }
 
@@ -305,7 +503,7 @@
       const xInfo = formatXAccount(profile.x);
       const xHtml = xInfo
         ? `<a class="x-link" href="${escapeAttribute(xInfo.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(xInfo.display)}</a>`
-        : '未設定';
+        : escapeHtml(CONFIG.LABELS.unSet);
 
       const favSong = safeStr(profile.favoriteSong);
       const favPoint = safeStr(profile.favoritePoint);
@@ -321,18 +519,18 @@
 
         <section class="detail-section">
           <table class="info-table">
-            <tr><th>Xアカウント</th><td>${xHtml}</td></tr>
-            <tr><th>プロフィール番号</th><td>${escapeHtml(safeStr(profile.profileNumber))}</td></tr>
-            <tr><th>出身地・国</th><td>${escapeHtml(safeStr(profile.birthplace))}</td></tr>
-            <tr><th>誕生日</th><td>${escapeHtml(safeStr(profile.birthday))}</td></tr>
+            <tr><th>${escapeHtml(CONFIG.LABELS.xAccount)}</th><td>${xHtml}</td></tr>
+            <tr><th>${escapeHtml(CONFIG.LABELS.profileNumber)}</th><td>${escapeHtml(safeStr(profile.profileNumber))}</td></tr>
+            <tr><th>${escapeHtml(CONFIG.LABELS.birthplace)}</th><td>${escapeHtml(safeStr(profile.birthplace))}</td></tr>
+            <tr><th>${escapeHtml(CONFIG.LABELS.birthday)}</th><td>${escapeHtml(safeStr(profile.birthday))}</td></tr>
           </table>
         </section>
 
-        ${favSong ? `<section class="detail-section"><h3>FAVORITE SONG</h3><p class="detail-text">${escapeHtml(favSong)}</p></section>` : ''}
-        ${favPoint ? `<section class="detail-section"><h3>WHAT I LOVE</h3><p class="detail-text">${escapeHtml(favPoint)}</p></section>` : ''}
-        ${msg ? `<section class="detail-section"><h3>MESSAGE</h3><p class="detail-text">${escapeHtml(msg)}</p></section>` : ''}
-        ${meseca ? `<section class="detail-section"><h3>MESSAGE CARD</h3><img class="detail-image" src="${escapeAttribute(meseca)}" alt="メセカ画像"></section>` : ''}
-        ${aonyacchi ? `<section class="detail-section"><h3>AONYACCHI</h3><img class="detail-image" src="${escapeAttribute(aonyacchi)}" alt="あおにゃっち画像"></section>` : ''}
+        ${favSong ? `<section class="detail-section"><h3>${escapeHtml(CONFIG.LABELS.favoriteSong)}</h3><p class="detail-text">${escapeHtml(favSong)}</p></section>` : ''}
+        ${favPoint ? `<section class="detail-section"><h3>${escapeHtml(CONFIG.LABELS.favoritePoint)}</h3><p class="detail-text">${escapeHtml(favPoint)}</p></section>` : ''}
+        ${msg ? `<section class="detail-section"><h3>${escapeHtml(CONFIG.LABELS.message)}</h3><p class="detail-text">${escapeHtml(msg)}</p></section>` : ''}
+        ${meseca ? `<section class="detail-section"><h3>${escapeHtml(CONFIG.LABELS.messageCard)}</h3><img class="detail-image" src="${escapeAttribute(meseca)}" alt="メセカ画像"></section>` : ''}
+        ${aonyacchi ? `<section class="detail-section"><h3>${escapeHtml(CONFIG.LABELS.aonyacchi)}</h3><img class="detail-image" src="${escapeAttribute(aonyacchi)}" alt="あおにゃっち画像"></section>` : ''}
         ${createOtherImages(profile)}
       `;
     }
@@ -343,7 +541,7 @@
 
       return `
         <section class="detail-section">
-          <h3>OTHER PHOTOS</h3>
+          <h3>${escapeHtml(CONFIG.LABELS.otherPhotos)}</h3>
           <div class="image-grid">
             ${images.map(function(image, index) {
               return `<img class="detail-image" src="${escapeAttribute(image)}" alt="その他画像${index + 1}">`;
@@ -354,9 +552,7 @@
     }
 
     function safeStr(val) {
-      if (val === undefined || val === null || val === 'undefined' || val === 'null') {
-        return '';
-      }
+      if (val === undefined || val === null || val === 'undefined' || val === 'null') return '';
       return String(val).trim();
     }
 

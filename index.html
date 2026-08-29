@@ -272,7 +272,7 @@
       document.getElementById('adminBtn').addEventListener('click', handleAdminToggle);
       document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
       
-      updateAdminUI();
+      updateAdminUI(false);
       loadPage();
     });
 
@@ -298,9 +298,9 @@
       showList();
     }
 
-    function updateAdminUI() {
-      const pass = sessionStorage.getItem('admin_pass');
-      if (pass) {
+    // 引数 isAuth の真偽値に応じて表示状態を変更する
+    function updateAdminUI(isAuth) {
+      if (isAuth) {
         document.getElementById('adminBadge').hidden = false;
         document.getElementById('settingsBtn').hidden = false;
         document.getElementById('adminBtn').textContent = CONFIG.LABELS.adminBtnActive;
@@ -317,8 +317,8 @@
       if (currentPass) {
         sessionStorage.removeItem('admin_pass');
         allProfiles = [];
-        updateAdminUI();
-        fetchDataAndRender();
+        updateAdminUI(false);
+        fetchDataAndRender('');
         return;
       }
 
@@ -329,10 +329,8 @@
         return;
       }
 
-      sessionStorage.setItem('admin_pass', inputPass.trim());
       allProfiles = [];
-      updateAdminUI();
-      fetchDataAndRender();
+      fetchDataAndRender(inputPass.trim());
     }
 
     function openSettingsModal() {
@@ -400,12 +398,12 @@
       fetchDataAndRender();
     }
 
-    function fetchDataAndRender() {
+    function fetchDataAndRender(pass) {
       const grid = document.getElementById('profileGrid');
       grid.innerHTML = '<div class="loading">' + escapeHtml(CONFIG.MESSAGES.loading) + '</div>';
 
-      const pass = sessionStorage.getItem('admin_pass') || '';
-      const fetchUrl = CONFIG.GAS_URL + '?pass=' + encodeURIComponent(pass) + '&t=' + Date.now();
+      const checkPass = pass !== undefined ? pass : (sessionStorage.getItem('admin_pass') || '');
+      const fetchUrl = CONFIG.GAS_URL + '?pass=' + encodeURIComponent(checkPass) + '&t=' + Date.now();
 
       fetch(fetchUrl)
         .then(function(response) {
@@ -418,14 +416,24 @@
           if (Array.isArray(data)) {
             allProfiles = data;
             renderProfiles(allProfiles, true, false);
+            updateAdminUI(false);
           } else {
             allProfiles = data.profiles || [];
             currentSettings = data.settings || { enabled: false, start: '', end: '' };
             
-            if (pass && !data.isAuth) {
-              alert(CONFIG.MESSAGES.wrongPasswordAlert);
+            if (data.isAuth) {
+              // 認証成功時のみセッションに保存し、管理者UIを表示する
+              if (checkPass) {
+                sessionStorage.setItem('admin_pass', checkPass);
+              }
+              updateAdminUI(true);
+            } else {
+              // 認証失敗時
+              if (checkPass) {
+                alert(CONFIG.MESSAGES.wrongPasswordAlert);
+              }
               sessionStorage.removeItem('admin_pass');
-              updateAdminUI();
+              updateAdminUI(false);
             }
 
             renderProfiles(allProfiles, data.isPublicOpen, data.isAuth);
